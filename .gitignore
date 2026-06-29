@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+
+node_modules/
+npm-debug.log*
+
+data/
+dev-data/
+*.db
+*.db-shm
+*.db-wal
+
+.DS_Store

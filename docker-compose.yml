@@ -1,0 +1,15 @@
+services:
+  ordenado:
+    build: .
+    ports:
+      - "${PORT:-8092}:8092"
+    volumes:
+      - /mnt/user/appdata/ordenado:/data
+    environment:
+      - PORT=${PORT:-8092}
+      - JWT_SECRET=${JWT_SECRET}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - FROM_EMAIL=${FROM_EMAIL:-noreply@jarvisserver.one}
+      - APP_URL=${APP_URL:-https://ordenadoapp.jarvisserver.one}
+      - DB_PATH=/data/ordenado.db
+    restart: unless-stopped
