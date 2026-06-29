@@ -80,9 +80,29 @@ A base de dados vai ficar aqui:
 /mnt/user/appdata/ordenado/ordenado.db
 ```
 
-## 6. Criar o ficheiro `.env`
+## 6. Copiar ou criar o ficheiro `.env`
 
-O `.env` tem segredos, por isso nao vai para o GitHub. Tens de o criar diretamente no Unraid.
+O `.env` tem segredos, por isso nao vai para o GitHub.
+
+Se ja tens o `.env` pronto no Mac, copia-o diretamente para o Unraid:
+
+```bash
+scp /Users/brunosilva/ordenado-app/.env root@IP_DO_UNRAID:/mnt/user/appdata/ordenado-app/.env
+```
+
+Exemplo:
+
+```bash
+scp /Users/brunosilva/ordenado-app/.env root@192.168.1.50:/mnt/user/appdata/ordenado-app/.env
+```
+
+Depois, no Unraid:
+
+```bash
+chmod 600 /mnt/user/appdata/ordenado-app/.env
+```
+
+Se preferires criar manualmente, faz assim.
 
 No Unraid:
 
