@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>O meu ordenado / Mon salaire</title>
+  <title>O meu ordenado</title>
   <style>
     :root{--bg:#f5f5f0;--green:#1D9E75;--purple:#534AB7;--ink:#25252c;--muted:#747482;--line:#deded6;--card:#fff}
     *{box-sizing:border-box} body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink)}
     main{min-height:100vh;display:grid;place-items:center;padding:24px}.shell{width:min(980px,100%);display:grid;grid-template-columns:1fr 1.15fr;gap:24px;align-items:stretch}
     .brand,.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:28px;box-shadow:0 18px 45px rgba(28,28,35,.08)}
     .brand{display:flex;flex-direction:column;justify-content:space-between;min-height:560px}.logo{width:64px;height:64px}.brand h1{font-size:42px;line-height:1.02;margin:24px 0 12px}.brand p{font-size:18px;color:var(--muted);line-height:1.45}
-    .tabs{display:flex;gap:8px;margin-bottom:20px}.tabs button{flex:1}.tab{display:none}.tab.active{display:block}
+    .tabs{display:flex;gap:8px;margin-bottom:20px}.tabs button{flex:1}.tab{display:none}.tab.active{display:block}.lang{display:flex;justify-content:flex-end;margin-bottom:14px}
     label{font-weight:700;font-size:13px;display:block;margin:14px 0 6px}input{width:100%;border:1px solid var(--line);border-radius:8px;padding:12px 13px;font-size:16px;background:#fff}
     button{border:0;border-radius:8px;background:var(--green);color:white;font-weight:800;padding:12px 14px;cursor:pointer;font-size:15px}button.secondary{background:#ecece5;color:var(--ink)}button.purple{background:var(--purple)}
     .row{display:flex;gap:10px;align-items:center}.row input[type=checkbox]{width:auto}.actions{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}.msg{min-height:24px;margin-top:14px;color:var(--muted);font-weight:650}.ok{color:#137a57}.err{color:#bd2d2d}
@@ -23,41 +23,42 @@
     <aside class="brand">
       <div>
         <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 2 L46 10 L46 26 Q46 38 24 46 Q2 38 2 26 L2 10 Z" fill="#534AB7"/><path d="M24 8 L40 15 L40 27 Q40 36 24 42 Q8 36 8 27 L8 15 Z" fill="#7F77DD" opacity="0.4"/><text x="24" y="30" text-anchor="middle" font-size="18" font-weight="700" fill="white">€</text></svg>
-        <h1>O meu ordenado<br>Mon salaire</h1>
-        <p>Calendário mensal, horas extra, ausências, férias e estimativa salarial numa app privada com SQLite.</p>
+        <h1 data-i="brandTitle">O meu ordenado</h1>
+        <p data-i="brandCopy">Calendário mensal, horas extra, ausências, férias e estimativa salarial numa app privada com SQLite.</p>
       </div>
-      <p class="small">Porta 8092 · Node.js + Express · Docker ready</p>
+      <p class="small" data-i="brandFoot">Porta 8092 · Node.js + Express · Docker ready</p>
     </aside>
     <section class="panel">
+      <div class="lang"><button id="langBtn" class="secondary" type="button">FR</button></div>
       <div class="tabs">
-        <button class="secondary" data-tab="login">Login</button>
-        <button class="secondary" data-tab="register">Registo</button>
-        <button class="secondary" data-tab="forgot">Password</button>
+        <button class="secondary" data-tab="login" data-i="loginTab">Login</button>
+        <button class="secondary" data-tab="register" data-i="registerTab">Registo</button>
+        <button class="secondary" data-tab="forgot" data-i="forgotTab">Password</button>
       </div>
 
       <form id="login" class="tab active">
         <label>Email</label><input name="email" type="email" required autocomplete="email">
-        <label>Password</label><input name="password" type="password" required autocomplete="current-password">
-        <label class="row"><input name="rememberMe" type="checkbox"> Lembrar-me / Se souvenir de moi</label>
-        <div class="actions"><button class="purple">Entrar / Connexion</button></div>
+        <label data-i="password">Password</label><input name="password" type="password" required autocomplete="current-password">
+        <label class="row"><input name="rememberMe" type="checkbox"> <span data-i="remember">Lembrar-me</span></label>
+        <div class="actions"><button class="purple" data-i="loginBtn">Entrar</button></div>
       </form>
 
       <form id="register" class="tab">
-        <label>Nome / Nom</label><input name="name" required autocomplete="name">
+        <label data-i="name">Nome</label><input name="name" required autocomplete="name">
         <label>Email</label><input name="email" type="email" required autocomplete="email">
-        <label>Password (mín. 8)</label><input name="password" type="password" minlength="8" required autocomplete="new-password">
-        <div class="actions"><button class="purple">Criar conta / Créer le compte</button></div>
-        <p class="small">O primeiro utilizador registado fica administrador. Confirma a conta pelo link enviado por email.</p>
+        <label data-i="passwordMin">Password (mín. 8)</label><input name="password" type="password" minlength="8" required autocomplete="new-password">
+        <div class="actions"><button class="purple" data-i="registerBtn">Criar conta</button></div>
+        <p class="small" data-i="registerNote">O primeiro utilizador registado fica administrador. Confirma a conta pelo link enviado por email.</p>
       </form>
 
       <form id="forgot" class="tab">
         <label>Email</label><input name="email" type="email" required autocomplete="email">
-        <div class="actions"><button class="purple">Enviar reset / Envoyer</button></div>
+        <div class="actions"><button class="purple" data-i="forgotBtn">Enviar reset</button></div>
       </form>
 
       <form id="resetForm" class="tab">
-        <label>Nova password / Nouveau mot de passe</label><input name="password" type="password" minlength="8" required>
-        <div class="actions"><button class="purple">Alterar password</button></div>
+        <label data-i="newPassword">Nova password</label><input name="password" type="password" minlength="8" required>
+        <div class="actions"><button class="purple" data-i="resetBtn">Alterar password</button></div>
       </form>
       <div id="msg" class="msg"></div>
     </section>
@@ -65,18 +66,27 @@
 </main>
 <script>
 const $ = (s, r=document) => r.querySelector(s);
+const I = {
+  pt:{brandTitle:'O meu ordenado',brandCopy:'Calendário mensal, horas extra, ausências, férias e estimativa salarial numa app privada com SQLite.',brandFoot:'Porta 8092 · Node.js + Express · Docker ready',loginTab:'Login',registerTab:'Registo',forgotTab:'Password',password:'Password',remember:'Lembrar-me',loginBtn:'Entrar',name:'Nome',passwordMin:'Password (mín. 8)',registerBtn:'Criar conta',registerNote:'O primeiro utilizador registado fica administrador. Confirma a conta pelo link enviado por email.',forgotBtn:'Enviar reset',newPassword:'Nova password',resetBtn:'Alterar password',activated:'Conta activada. Já pode iniciar sessão.',invalidActivation:'Link de activação inválido ou expirado.',notVerified:'Confirme primeiro o email.',badLogin:'Credenciais inválidas.',created:'Conta criada. Veja o email para activar.',emailExists:'Email já registado.',badRegister:'Dados inválidos. Password mínima: 8 caracteres.',resetSent:'Se o email existir, foi enviado um link de reset.',resetOk:'Password alterada. Pode iniciar sessão.',resetBad:'Link inválido/expirado ou password fraca.'},
+  fr:{brandTitle:'Mon salaire',brandCopy:'Calendrier mensuel, heures supplémentaires, absences, congés et estimation du salaire dans une application privée avec SQLite.',brandFoot:'Port 8092 · Node.js + Express · prêt pour Docker',loginTab:'Connexion',registerTab:'Inscription',forgotTab:'Mot de passe',password:'Mot de passe',remember:'Se souvenir de moi',loginBtn:'Connexion',name:'Nom',passwordMin:'Mot de passe (min. 8)',registerBtn:'Créer le compte',registerNote:"Le premier utilisateur inscrit devient administrateur. Confirmez le compte avec le lien envoyé par email.",forgotBtn:'Envoyer reset',newPassword:'Nouveau mot de passe',resetBtn:'Modifier le mot de passe',activated:'Compte activé. Vous pouvez vous connecter.',invalidActivation:"Lien d'activation invalide ou expiré.",notVerified:"Confirmez d'abord l'email.",badLogin:'Identifiants invalides.',created:"Compte créé. Vérifiez l'email pour l'activer.",emailExists:'Email déjà enregistré.',badRegister:'Données invalides. Mot de passe minimum: 8 caractères.',resetSent:"Si l'email existe, un lien de reset a été envoyé.",resetOk:'Mot de passe modifié. Vous pouvez vous connecter.',resetBad:'Lien invalide/expiré ou mot de passe trop faible.'}
+};
+let lang = localStorage.getItem('ordenadoLang') || 'pt';
+const tr = k => (I[lang] || I.pt)[k] || k;
 const msg = (t, ok=false) => { $('#msg').textContent=t; $('#msg').className='msg '+(ok?'ok':'err'); };
+function applyI(){ document.documentElement.lang=lang; document.title=tr('brandTitle'); document.querySelectorAll('[data-i]').forEach(e=>e.textContent=tr(e.dataset.i)); $('#langBtn').textContent=lang==='pt'?'FR':'PT'; }
 const params = new URLSearchParams(location.search);
-if (params.get('verified') === 'ok') msg('Conta activada. Já pode iniciar sessão.', true);
-if (params.get('verified') === 'invalid') msg('Link de activação inválido ou expirado.');
+applyI();
+$('#langBtn').onclick = () => { lang = lang === 'pt' ? 'fr' : 'pt'; localStorage.setItem('ordenadoLang', lang); applyI(); };
+if (params.get('verified') === 'ok') msg(tr('activated'), true);
+if (params.get('verified') === 'invalid') msg(tr('invalidActivation'));
 if (params.get('reset')) showTab('resetForm'); else showTab('login');
 document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 function showTab(id){ document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id===id)); }
 async function api(url, body){ const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error||'Erro'); return j; }
-$('#login').onsubmit = async e => { e.preventDefault(); const f=Object.fromEntries(new FormData(e.target)); f.rememberMe=!!e.target.rememberMe.checked; try{ await api('/api/login',f); location.href='/app'; }catch(err){ msg(err.message==='not_verified'?'Confirme primeiro o email.':'Credenciais inválidas.'); } };
-$('#register').onsubmit = async e => { e.preventDefault(); try{ await api('/api/register',Object.fromEntries(new FormData(e.target))); msg('Conta criada. Veja o email para activar.', true); showTab('login'); }catch(err){ msg(err.message==='email_exists'?'Email já registado.':'Dados inválidos. Password mínima: 8 caracteres.'); } };
-$('#forgot').onsubmit = async e => { e.preventDefault(); await api('/api/forgot-password',Object.fromEntries(new FormData(e.target))); msg('Se o email existir, foi enviado um link de reset.', true); };
-$('#resetForm').onsubmit = async e => { e.preventDefault(); try{ await api('/api/reset-password',{token:params.get('reset'),newPassword:e.target.password.value}); msg('Password alterada. Pode iniciar sessão.', true); showTab('login'); }catch(err){ msg('Link inválido/expirado ou password fraca.'); } };
+$('#login').onsubmit = async e => { e.preventDefault(); const f=Object.fromEntries(new FormData(e.target)); f.rememberMe=!!e.target.rememberMe.checked; try{ await api('/api/login',f); location.href='/app'; }catch(err){ msg(err.message==='not_verified'?tr('notVerified'):tr('badLogin')); } };
+$('#register').onsubmit = async e => { e.preventDefault(); try{ await api('/api/register',Object.fromEntries(new FormData(e.target))); msg(tr('created'), true); showTab('login'); }catch(err){ msg(err.message==='email_exists'?tr('emailExists'):tr('badRegister')); } };
+$('#forgot').onsubmit = async e => { e.preventDefault(); await api('/api/forgot-password',Object.fromEntries(new FormData(e.target))); msg(tr('resetSent'), true); };
+$('#resetForm').onsubmit = async e => { e.preventDefault(); try{ await api('/api/reset-password',{token:params.get('reset'),newPassword:e.target.password.value}); msg(tr('resetOk'), true); showTab('login'); }catch(err){ msg(tr('resetBad')); } };
 fetch('/api/me').then(r=>{ if(r.ok) location.href='/app'; });
 </script>
 </body>
