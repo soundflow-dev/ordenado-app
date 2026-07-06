@@ -34,8 +34,19 @@ Nunca publiques o ficheiro `.env`.
 
 ## Instalar no Unraid
 
-Segue o guia passo a passo em:
+Tens duas opcoes:
+
+- Template Unraid: `templates/ordenado-app.xml`
+- Docker Compose a partir do GitHub
+
+Guia passo a passo:
 
 ```text
 INSTALL_UNRAID.md
+```
+
+Template direto:
+
+```text
+https://raw.githubusercontent.com/soundflow-dev/ordenado-app/main/templates/ordenado-app.xml
 ```

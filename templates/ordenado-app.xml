@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>ordenado-app</Name>
+  <Repository>ghcr.io/soundflow-dev/ordenado-app:latest</Repository>
+  <Registry>https://github.com/soundflow-dev/ordenado-app/pkgs/container/ordenado-app</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/soundflow-dev/ordenado-app/issues</Support>
+  <Project>https://github.com/soundflow-dev/ordenado-app</Project>
+  <Overview>O meu ordenado: app web em Node.js, Express e SQLite para calendario mensal, horas extra, ferias, ausencias e estimativa salarial com confirmacao por email.</Overview>
+  <Category>Productivity: Tools:</Category>
+  <WebUI>http://[IP]:[PORT:8092]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/soundflow-dev/ordenado-app/main/templates/ordenado-app.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/soundflow-dev/ordenado-app/main/public/icon-512.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="WebUI Port" Target="8092" Default="8092" Mode="tcp" Description="Porta externa para aceder a app no browser." Type="Port" Display="always" Required="true" Mask="false">8092</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/ordenado" Mode="rw" Description="Pasta persistente onde fica a base de dados SQLite." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/ordenado</Config>
+  <Config Name="PORT" Target="PORT" Default="8092" Mode="" Description="Porta interna usada pela app. Mantem 8092." Type="Variable" Display="advanced" Required="true" Mask="false">8092</Config>
+  <Config Name="DB_PATH" Target="DB_PATH" Default="/data/ordenado.db" Mode="" Description="Caminho da base de dados dentro do container." Type="Variable" Display="advanced" Required="true" Mask="false">/data/ordenado.db</Config>
+  <Config Name="APP_URL" Target="APP_URL" Default="https://ordenadoapp.jarvisserver.one" Mode="" Description="URL publico da app. Usado nos links de confirmacao por email." Type="Variable" Display="always" Required="true" Mask="false">https://ordenadoapp.jarvisserver.one</Config>
+  <Config Name="FROM_EMAIL" Target="FROM_EMAIL" Default="noreply@jarvisserver.one" Mode="" Description="Email remetente usado pela app." Type="Variable" Display="always" Required="true" Mask="false">noreply@jarvisserver.one</Config>
+  <Config Name="JWT_SECRET" Target="JWT_SECRET" Default="" Mode="" Description="Segredo longo e aleatorio para sessoes/login. Gera um novo e guarda-o." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="RESEND_API_KEY" Target="RESEND_API_KEY" Default="" Mode="" Description="API key do Resend para enviar emails de confirmacao." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+</Container>

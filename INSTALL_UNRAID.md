@@ -1,4 +1,86 @@
-# Instalar no Unraid a partir do GitHub
+# Instalar no Unraid
+
+Tens duas formas de instalar:
+
+- **Opcao A - Template Unraid**, mais simples para instalar pela interface.
+- **Opcao B - GitHub + Docker Compose**, a forma manual que ja existia.
+
+## Opcao A - Instalar por template Unraid
+
+Esta opcao usa a imagem Docker publicada em:
+
+```text
+ghcr.io/soundflow-dev/ordenado-app:latest
+```
+
+O template esta neste ficheiro:
+
+```text
+https://raw.githubusercontent.com/soundflow-dev/ordenado-app/main/templates/ordenado-app.xml
+```
+
+### 1. Criar o template no Unraid
+
+No Unraid, abre o terminal ou entra por SSH e executa:
+
+```bash
+mkdir -p /boot/config/plugins/dockerMan/templates-user
+curl -L https://raw.githubusercontent.com/soundflow-dev/ordenado-app/main/templates/ordenado-app.xml \
+  -o /boot/config/plugins/dockerMan/templates-user/my-ordenado-app.xml
+```
+
+### 2. Abrir o template
+
+1. Vai a `Docker`.
+2. Clica em `Add Container`.
+3. No campo `Template`, escolhe `ordenado-app`.
+
+Se nao aparecer logo, recarrega a pagina do Unraid.
+
+### 3. Preencher os campos obrigatorios
+
+Preenche:
+
+```text
+WebUI Port: 8092
+Data: /mnt/user/appdata/ordenado
+APP_URL: https://ordenadoapp.jarvisserver.one
+FROM_EMAIL: noreply@jarvisserver.one
+JWT_SECRET: uma_chave_longa_aleatoria
+RESEND_API_KEY: a_tua_chave_do_resend
+```
+
+Para gerar `JWT_SECRET`, podes usar no terminal:
+
+```bash
+openssl rand -hex 32
+```
+
+### 4. Instalar
+
+Clica em `Apply`.
+
+Depois testa:
+
+```text
+http://IP_DO_UNRAID:8092
+```
+
+ou:
+
+```text
+https://ordenadoapp.jarvisserver.one
+```
+
+### 5. Atualizar pela interface
+
+Quando eu publicar nova imagem, no Unraid basta ires a `Docker` e clicar em `Check for Updates`.
+
+Se aparecer update para `ordenado-app`, aplica.
+
+---
+
+## Opcao B - Instalar a partir do GitHub com Docker Compose
 
 Este guia assume que a app vai ficar em:
 
