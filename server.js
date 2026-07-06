@@ -13,7 +13,6 @@ const app = express();
 const PORT = Number(process.env.PORT || 8092);
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const APP_URL = (process.env.APP_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
-const cookieSecure = APP_URL.startsWith('https://');
 
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '2mb' }));
@@ -29,10 +28,14 @@ function sign(user, rememberMe) {
   });
 }
 
-function setSession(res, user, rememberMe) {
+function isSecureRequest(req) {
+  return req.secure || String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+}
+
+function setSession(req, res, user, rememberMe) {
   res.cookie('session', sign(user, rememberMe), {
     httpOnly: true,
-    secure: cookieSecure,
+    secure: isSecureRequest(req),
     sameSite: 'lax',
     maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
   });
@@ -87,12 +90,12 @@ app.post('/api/login', async (req, res) => {
     return res.status(401).json({ error: 'invalid_credentials' });
   }
   if (!user.verified) return res.status(403).json({ error: 'not_verified' });
-  setSession(res, user, !!req.body.rememberMe);
+  setSession(req, res, user, !!req.body.rememberMe);
   res.json({ ok: true, user: { id: user.id, name: user.name, email: user.email, isAdmin: !!user.is_admin } });
 });
 
 app.post('/api/logout', (req, res) => {
-  res.clearCookie('session', { httpOnly: true, secure: cookieSecure, sameSite: 'lax' });
+  res.clearCookie('session', { httpOnly: true, secure: isSecureRequest(req), sameSite: 'lax' });
   res.json({ ok: true });
 });
 
