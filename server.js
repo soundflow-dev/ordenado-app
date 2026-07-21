@@ -55,10 +55,8 @@ function auth(req, res, next) {
 
 function pdfEscape(text) {
   return String(text || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[\\()]/g, '\\$&')
-    .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '');
+    .replace(/[^\x09\x0A\x0D\x20-\xFF]/g, '');
 }
 
 function makeSimplePdf(lines) {
@@ -123,6 +121,104 @@ function tableRow(values, widths) {
 
 function tableLine(widths) {
   return widths.map((w) => '-'.repeat(w)).join('-+-');
+}
+
+function pdfText(x, y, text, size = 10, bold = false, color = '22 22 28') {
+  return `BT ${color} rg /${bold ? 'F2' : 'F1'} ${size} Tf ${x} ${y} Td (${pdfEscape(text)}) Tj ET`;
+}
+
+function pdfRect(x, y, w, h, fill = '1 1 1', stroke = '0.85 0.85 0.82') {
+  return `${fill} rg ${stroke} RG ${x} ${y} ${w} ${h} re B`;
+}
+
+function makeDesignedPdf(draw) {
+  const pages = [];
+  let commands = [];
+  let y = 760;
+  const newPage = () => {
+    if (commands.length) pages.push(commands);
+    commands = [
+      pdfRect(36, 36, 523, 770, '0.985 0.985 0.96', '0.985 0.985 0.96')
+    ];
+    y = 760;
+  };
+  const ensure = (height) => {
+    if (y - height < 58) newPage();
+  };
+  const add = (cmd) => commands.push(cmd);
+  newPage();
+  draw({
+    add,
+    ensure,
+    get y() { return y; },
+    set y(value) { y = value; },
+    text: (...args) => add(pdfText(...args)),
+    rect: (...args) => add(pdfRect(...args)),
+    header(title, subtitle) {
+      add(pdfRect(54, 728, 487, 66, '0.09 0.54 0.41', '0.09 0.54 0.41'));
+      add(pdfText(74, 766, title, 20, true, '1 1 1'));
+      add(pdfText(74, 744, subtitle, 10, false, '0.88 1 0.95'));
+      y = 704;
+    },
+    keyValue(label, value, x, yy, w = 150) {
+      add(pdfRect(x, yy - 33, w, 44, '1 1 1', '0.88 0.88 0.84'));
+      add(pdfText(x + 12, yy - 7, label, 8, false, '0.48 0.48 0.52'));
+      add(pdfText(x + 12, yy - 24, value, 14, true, '0.05 0.44 0.35'));
+    },
+    section(title) {
+      ensure(34);
+      add(pdfText(54, y, title, 13, true, '0.10 0.10 0.14'));
+      y -= 20;
+    },
+    table(columns, rows, widths) {
+      const x0 = 54;
+      const rowH = 22;
+      const tableW = widths.reduce((a, b) => a + b, 0);
+      ensure(rowH * (rows.length + 2));
+      add(pdfRect(x0, y - rowH + 5, tableW, rowH, '0.90 0.96 0.93', '0.78 0.88 0.83'));
+      let x = x0;
+      columns.forEach((col, i) => {
+        add(pdfText(x + 6, y - 10, col, 8, true, '0.07 0.38 0.31'));
+        x += widths[i];
+      });
+      y -= rowH;
+      rows.forEach((row, r) => {
+        ensure(rowH + 8);
+        add(pdfRect(x0, y - rowH + 5, tableW, rowH, r % 2 ? '1 1 1' : '0.975 0.975 0.955', '0.88 0.88 0.84'));
+        x = x0;
+        row.forEach((cell, i) => {
+          add(pdfText(x + 6, y - 10, String(cell ?? ''), 8.5, false, '0.14 0.14 0.18'));
+          x += widths[i];
+        });
+        y -= rowH;
+      });
+      y -= 12;
+    }
+  });
+  if (commands.length) pages.push(commands);
+
+  const objects = [''];
+  objects.push('<< /Type /Catalog /Pages 2 0 R >>');
+  objects.push('<< /Type /Pages /Kids [' + pages.map((_, i) => `${3 + i * 2} 0 R`).join(' ') + `] /Count ${pages.length} >>`);
+  pages.forEach((page, i) => {
+    const pageObj = 3 + i * 2;
+    const contentObj = pageObj + 1;
+    objects[pageObj] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents ${contentObj} 0 R >>`;
+    const stream = page.join('\n');
+    objects[contentObj] = `<< /Length ${Buffer.byteLength(stream, 'latin1')} >>\nstream\n${stream}\nendstream`;
+  });
+
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  for (let i = 1; i < objects.length; i++) {
+    offsets[i] = Buffer.byteLength(pdf, 'latin1');
+    pdf += `${i} 0 obj\n${objects[i]}\nendobj\n`;
+  }
+  const xref = Buffer.byteLength(pdf, 'latin1');
+  pdf += `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+  for (let i = 1; i < objects.length; i++) pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+  pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return Buffer.from(pdf, 'latin1');
 }
 
 function hourBankPdfBody(data) {
@@ -212,6 +308,113 @@ function monthReportPdfBody(data) {
     tableRow(['Frais de deplacement', `${Number(s.travelDays || 0)} jours`], sumWidths)
   );
   return lines;
+}
+
+function makeMonthReportPdf(data) {
+  const s = data.summary || {};
+  const dayType = (day) => {
+    if (day.type === 'work') return 'Travail';
+    if (day.type === 'vacation') return 'Congé payé';
+    if (day.type === 'absence') return 'Absence non payée';
+    return '';
+  };
+  return makeDesignedPdf((pdf) => {
+    pdf.header("Rapport d'heures mensuel", `${data.name || ''} · ${data.month || ''}`);
+    pdf.keyValue('Total heures', fmtHours(s.workHours), 54, pdf.y, 150);
+    pdf.keyValue('Heures normales', fmtHours(s.normal), 220, pdf.y, 150);
+    pdf.keyValue('Frais déplacement', `${Number(s.travelDays || 0)} jours`, 386, pdf.y, 155);
+    pdf.y -= 70;
+
+    pdf.section('Détail par jour');
+    pdf.table(
+      ['Date', 'Type', 'Heures', 'Dépl.'],
+      (Array.isArray(data.days) ? data.days : []).map((day) => [
+        day.date || '',
+        dayType(day),
+        day.type === 'work' ? fmtHours(day.hours) : '',
+        day.travel ? 'Oui' : 'Non'
+      ]),
+      [180, 170, 75, 62]
+    );
+
+    pdf.section('Récapitulatif par semaine');
+    pdf.table(
+      ['Semaine', 'Heures'],
+      (Array.isArray(data.weeks) ? data.weeks : []).map((week) => [week.label || '', fmtHours(week.hours)]),
+      [240, 120]
+    );
+
+    pdf.section('Récapitulatif du mois');
+    pdf.table(
+      ['Rubrique', 'Valeur'],
+      [
+        ['Total heures', fmtHours(s.workHours)],
+        ['Heures normales', fmtHours(s.normal)],
+        ['HS +25%', fmtHours(s.hs25)],
+        ['HS semaine +50%', fmtHours(s.hs50)],
+        ['HS samedis +50%', fmtHours(s.sat)],
+        ['HS dimanches +100%', fmtHours(s.sun)],
+        ['HS fériés +100%', fmtHours(s.hol)],
+        ['Samedis travaillés', Number(s.satDays || 0)],
+        ['Dimanches travaillés', Number(s.sunDays || 0)],
+        ['Fériés travaillés', Number(s.holDays || 0)],
+        ['Congés payés', Number(s.vac || 0)],
+        ['Absences non payées', Number(s.abs || 0)],
+        ['Frais de déplacement', `${Number(s.travelDays || 0)} jours`]
+      ],
+      [280, 130]
+    );
+  });
+}
+
+function makeHourBankReportPdf(data) {
+  const categories = ['p25', 'p50', 'p100'];
+  const label = (key) => ({ p25: 'HS +25%', p50: 'HS +50%', p100: 'HS +100%' })[key] || key;
+  const typeLabel = (type) => ({ add: 'Ajout', remove: 'Retrait', paid: 'Payé' })[type] || type;
+  const sign = (type) => (type === 'add' ? 1 : -1);
+  const running = Object.fromEntries(categories.map((key) => [key, Number(data.opening?.[key] || 0)]));
+  const rows = (Array.isArray(data.entries) ? data.entries : []).map((entry) => {
+    const category = categories.includes(entry.category) ? entry.category : 'p25';
+    const hours = Number(entry.hours || 0);
+    running[category] += sign(entry.type) * hours;
+    return [
+      entry.date || '',
+      typeLabel(entry.type),
+      label(category),
+      entry.type === 'add' ? fmtHours(hours) : '',
+      entry.type === 'add' ? '' : fmtHours(hours),
+      fmtHours(running[category])
+    ];
+  });
+
+  return makeDesignedPdf((pdf) => {
+    pdf.header("Extrait banque d'heures", `${data.name || ''} · ${data.from || ''} au ${data.to || ''}`);
+    pdf.keyValue('Solde HS +25%', fmtHours(data.closing?.p25), 54, pdf.y, 150);
+    pdf.keyValue('Solde HS +50%', fmtHours(data.closing?.p50), 220, pdf.y, 150);
+    pdf.keyValue('Solde HS +100%', fmtHours(data.closing?.p100), 386, pdf.y, 155);
+    pdf.y -= 70;
+
+    pdf.section('Solde initial');
+    pdf.table(
+      ['Catégorie', 'Heures'],
+      categories.map((category) => [label(category), fmtHours(data.opening?.[category])]),
+      [220, 130]
+    );
+
+    pdf.section('Mouvements');
+    pdf.table(
+      ['Date', 'Type', 'Catégorie', 'Entrée', 'Sortie', 'Solde'],
+      rows.length ? rows : [['', 'Aucun mouvement', '', '', '', '']],
+      [68, 70, 100, 78, 78, 78]
+    );
+
+    pdf.section('Solde final');
+    pdf.table(
+      ['Catégorie', 'Heures'],
+      categories.map((category) => [label(category), fmtHours(data.closing?.[category])]),
+      [220, 130]
+    );
+  });
 }
 
 app.post('/api/register', async (req, res) => {
@@ -317,7 +520,7 @@ app.post('/api/data', auth, (req, res) => {
 app.post('/api/hour-bank/report', auth, async (req, res) => {
   const toEmail = normEmail(req.body.toEmail);
   const title = "Extrait banque d'heures";
-  const pdf = makeSimplePdf(hourBankPdfBody({ ...req.body, name: req.body.name || req.user.name }));
+  const pdf = makeHourBankReportPdf({ ...req.body, name: req.body.name || req.user.name });
 
   if (req.body.sendEmail) {
     if (!toEmail) return res.status(400).json({ error: 'invalid_email' });
@@ -340,7 +543,7 @@ app.post('/api/hour-bank/report', auth, async (req, res) => {
 app.post('/api/month-report', auth, async (req, res) => {
   const toEmail = normEmail(req.body.toEmail);
   const title = `Rapport d'heures - ${req.body.month || ''} - ${req.body.name || req.user.name}`;
-  const pdf = makeSimplePdf(monthReportPdfBody({ ...req.body, name: req.body.name || req.user.name }));
+  const pdf = makeMonthReportPdf({ ...req.body, name: req.body.name || req.user.name });
   if (!req.body.sendEmail) {
     return res
       .type('application/pdf')
