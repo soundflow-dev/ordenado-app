@@ -55,6 +55,8 @@ function auth(req, res, next) {
 
 function pdfEscape(text) {
   return String(text || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[\\()]/g, '\\$&')
     .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '');
 }
@@ -86,7 +88,7 @@ function makeSimplePdf(lines) {
   pages.forEach((page, i) => {
     const pageObj = 3 + i * 2;
     const contentObj = pageObj + 1;
-    objects[pageObj] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents ${contentObj} 0 R >>`;
+    objects[pageObj] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Courier >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents ${contentObj} 0 R >>`;
     const body = ['BT', '/F1 10 Tf', '50 800 Td'];
     let lastY = 800;
     page.forEach((row) => {
@@ -111,11 +113,26 @@ function makeSimplePdf(lines) {
   return Buffer.from(pdf, 'latin1');
 }
 
+function fmtHours(value) {
+  return `${Number(value || 0).toFixed(2)} h`;
+}
+
+function tableRow(values, widths) {
+  return values.map((value, i) => String(value ?? '').slice(0, widths[i]).padEnd(widths[i], ' ')).join(' | ');
+}
+
+function tableLine(widths) {
+  return widths.map((w) => '-'.repeat(w)).join('-+-');
+}
+
 function hourBankPdfBody(data) {
   const categories = ['p25', 'p50', 'p100'];
   const label = (key) => ({ p25: 'HS +25%', p50: 'HS +50%', p100: 'HS +100%' })[key] || key;
   const typeLabel = (type) => ({ add: 'Ajout', remove: 'Retrait', paid: 'Payé' })[type] || type;
+  const sign = (type) => (type === 'add' ? 1 : -1);
+  const running = Object.fromEntries(categories.map((key) => [key, Number(data.opening?.[key] || 0)]));
   const title = "Extrait banque d'heures";
+  const widths = [10, 9, 19, 10, 10, 10];
   const lines = [
     title,
     `Nom: ${data.name || ''}`,
@@ -124,10 +141,23 @@ function hourBankPdfBody(data) {
     'Solde initial:',
     ...categories.map((k) => `${label(k)}: ${Number(data.opening?.[k] || 0).toFixed(2)} h`),
     '',
-    'Mouvements:'
+    'Mouvements:',
+    tableRow(['Date', 'Type', 'Categorie', 'Entree', 'Sortie', 'Solde'], widths),
+    tableLine(widths)
   ];
   (Array.isArray(data.entries) ? data.entries : []).forEach((e) => {
-    lines.push(`${e.date || ''} | ${typeLabel(e.type)} | ${label(e.category)} | ${Number(e.hours || 0).toFixed(2)} h | ${e.note || ''}`);
+    const category = categories.includes(e.category) ? e.category : 'p25';
+    const hours = Number(e.hours || 0);
+    running[category] += sign(e.type) * hours;
+    lines.push(tableRow([
+      e.date || '',
+      typeLabel(e.type),
+      label(category),
+      e.type === 'add' ? fmtHours(hours) : '',
+      e.type === 'add' ? '' : fmtHours(hours),
+      fmtHours(running[category])
+    ], widths));
+    if (e.note) lines.push(`  Note: ${e.note}`);
   });
   if (!data.entries?.length) lines.push('Aucun mouvement sur cette période.');
   lines.push('', 'Solde final:', ...categories.map((k) => `${label(k)}: ${Number(data.closing?.[k] || 0).toFixed(2)} h`));
@@ -136,43 +166,50 @@ function hourBankPdfBody(data) {
 
 function monthReportPdfBody(data) {
   const dayType = (day) => {
-    if (day.type === 'work') return `${Number(day.hours || 0).toFixed(2)} h travaillées${day.travel === false ? ', sans frais de déplacement' : ''}`;
+    if (day.type === 'work') return 'Travail';
     if (day.type === 'vacation') return 'congé payé';
     if (day.type === 'absence') return 'absence non payée';
     return '';
   };
   const s = data.summary || {};
+  const dayWidths = [24, 18, 10, 12];
+  const weekWidths = [18, 12];
+  const sumWidths = [30, 12];
   const lines = [
     "Rapport d'heures mensuel",
     `Nom: ${data.name || ''}`,
     `Mois: ${data.month || ''}`,
     '',
-    'Détail par jour:'
+    'Détail par jour:',
+    tableRow(['Date', 'Type', 'Heures', 'Depl.'], dayWidths),
+    tableLine(dayWidths)
   ];
   (Array.isArray(data.days) ? data.days : []).forEach((day) => {
-    lines.push(`${day.date || ''}: ${dayType(day)}`);
+    lines.push(tableRow([day.date || '', dayType(day), day.type === 'work' ? fmtHours(day.hours) : '', day.travel ? 'Oui' : 'Non'], dayWidths));
   });
   if (!data.days?.length) lines.push('Aucune saisie.');
-  lines.push('', 'Récapitulatif par semaine:');
+  lines.push('', 'Récapitulatif par semaine:', tableRow(['Semaine', 'Heures'], weekWidths), tableLine(weekWidths));
   (Array.isArray(data.weeks) ? data.weeks : []).forEach((week) => {
-    lines.push(`${week.label || ''}: ${Number(week.hours || 0).toFixed(2)} h`);
+    lines.push(tableRow([week.label || '', fmtHours(week.hours)], weekWidths));
   });
   lines.push(
     '',
     'Récapitulatif du mois:',
-    `Total heures: ${Number(s.workHours || 0).toFixed(2)} h`,
-    `Heures normales: ${Number(s.normal || 0).toFixed(2)} h`,
-    `HS +25%: ${Number(s.hs25 || 0).toFixed(2)} h`,
-    `HS semaine +50%: ${Number(s.hs50 || 0).toFixed(2)} h`,
-    `HS samedis +50%: ${Number(s.sat || 0).toFixed(2)} h`,
-    `HS dimanches +100%: ${Number(s.sun || 0).toFixed(2)} h`,
-    `HS fériés +100%: ${Number(s.hol || 0).toFixed(2)} h`,
-    `Samedis travaillés: ${Number(s.satDays || 0)}`,
-    `Dimanches travaillés: ${Number(s.sunDays || 0)}`,
-    `Fériés travaillés: ${Number(s.holDays || 0)}`,
-    `Congés payés: ${Number(s.vac || 0)}`,
-    `Absences non payées: ${Number(s.abs || 0)}`,
-    `Frais de déplacement: ${Number(s.travelDays || 0)} jours`
+    tableRow(['Rubrique', 'Valeur'], sumWidths),
+    tableLine(sumWidths),
+    tableRow(['Total heures', fmtHours(s.workHours)], sumWidths),
+    tableRow(['Heures normales', fmtHours(s.normal)], sumWidths),
+    tableRow(['HS +25%', fmtHours(s.hs25)], sumWidths),
+    tableRow(['HS semaine +50%', fmtHours(s.hs50)], sumWidths),
+    tableRow(['HS samedis +50%', fmtHours(s.sat)], sumWidths),
+    tableRow(['HS dimanches +100%', fmtHours(s.sun)], sumWidths),
+    tableRow(['HS feries +100%', fmtHours(s.hol)], sumWidths),
+    tableRow(['Samedis travailles', Number(s.satDays || 0)], sumWidths),
+    tableRow(['Dimanches travailles', Number(s.sunDays || 0)], sumWidths),
+    tableRow(['Feries travailles', Number(s.holDays || 0)], sumWidths),
+    tableRow(['Conges payes', Number(s.vac || 0)], sumWidths),
+    tableRow(['Absences non payees', Number(s.abs || 0)], sumWidths),
+    tableRow(['Frais de deplacement', `${Number(s.travelDays || 0)} jours`], sumWidths)
   );
   return lines;
 }
@@ -302,9 +339,15 @@ app.post('/api/hour-bank/report', auth, async (req, res) => {
 
 app.post('/api/month-report', auth, async (req, res) => {
   const toEmail = normEmail(req.body.toEmail);
-  if (!toEmail) return res.status(400).json({ error: 'invalid_email' });
   const title = `Rapport d'heures - ${req.body.month || ''} - ${req.body.name || req.user.name}`;
   const pdf = makeSimplePdf(monthReportPdfBody({ ...req.body, name: req.body.name || req.user.name }));
+  if (!req.body.sendEmail) {
+    return res
+      .type('application/pdf')
+      .set('Content-Disposition', 'attachment; filename="rapport-heures-mensuel.pdf"')
+      .send(pdf);
+  }
+  if (!toEmail) return res.status(400).json({ error: 'invalid_email' });
   await sendMail({
     to: toEmail,
     subject: title,
