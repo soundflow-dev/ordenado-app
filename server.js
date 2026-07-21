@@ -53,6 +53,85 @@ function auth(req, res, next) {
   }
 }
 
+function pdfEscape(text) {
+  return String(text || '')
+    .replace(/[\\()]/g, '\\$&')
+    .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '');
+}
+
+function makeSimplePdf(lines) {
+  const safeLines = lines.flatMap((line) => {
+    const text = String(line || '');
+    const chunks = [];
+    for (let i = 0; i < text.length; i += 92) chunks.push(text.slice(i, i + 92));
+    return chunks.length ? chunks : [''];
+  });
+  let y = 800;
+  const pages = [];
+  let current = [];
+  safeLines.forEach((line) => {
+    if (y < 52) {
+      pages.push(current);
+      current = [];
+      y = 800;
+    }
+    current.push({ y, text: line });
+    y -= 16;
+  });
+  pages.push(current);
+
+  const objects = [''];
+  objects.push('<< /Type /Catalog /Pages 2 0 R >>');
+  objects.push('<< /Type /Pages /Kids [' + pages.map((_, i) => `${3 + i * 2} 0 R`).join(' ') + `] /Count ${pages.length} >>`);
+  pages.forEach((page, i) => {
+    const pageObj = 3 + i * 2;
+    const contentObj = pageObj + 1;
+    objects[pageObj] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents ${contentObj} 0 R >>`;
+    const body = ['BT', '/F1 10 Tf', '50 800 Td'];
+    let lastY = 800;
+    page.forEach((row) => {
+      body.push(`0 ${row.y - lastY} Td (${pdfEscape(row.text)}) Tj`);
+      lastY = row.y;
+    });
+    body.push('ET');
+    const stream = body.join('\n');
+    objects[contentObj] = `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`;
+  });
+
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  for (let i = 1; i < objects.length; i++) {
+    offsets[i] = Buffer.byteLength(pdf);
+    pdf += `${i} 0 obj\n${objects[i]}\nendobj\n`;
+  }
+  const xref = Buffer.byteLength(pdf);
+  pdf += `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+  for (let i = 1; i < objects.length; i++) pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+  pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return Buffer.from(pdf, 'latin1');
+}
+
+function hourBankPdfBody(data) {
+  const categories = ['hs25', 'hs50', 'sat', 'sun', 'hol'];
+  const title = data.lang === 'fr' ? "Extrait banque d'heures" : 'Extrato do banco de horas';
+  const lines = [
+    title,
+    `Nome: ${data.name || ''}`,
+    `Periodo: ${data.from || ''} a ${data.to || ''}`,
+    '',
+    'Saldo inicial:',
+    ...categories.map((k) => `${k}: ${Number(data.opening?.[k] || 0).toFixed(2)} h`),
+    '',
+    'Movimentos:'
+  ];
+  (Array.isArray(data.entries) ? data.entries : []).forEach((e) => {
+    lines.push(`${e.date || ''} | ${e.type || ''} | ${e.category || ''} | ${Number(e.hours || 0).toFixed(2)} h | ${e.note || ''}`);
+  });
+  if (!data.entries?.length) lines.push('Sem movimentos no periodo.');
+  lines.push('', 'Saldo final:', ...categories.map((k) => `${k}: ${Number(data.closing?.[k] || 0).toFixed(2)} h`));
+  return lines;
+}
+
 app.post('/api/register', async (req, res) => {
   const name = String(req.body.name || '').trim();
   const email = normEmail(req.body.email);
@@ -151,6 +230,29 @@ app.post('/api/data', auth, (req, res) => {
     ON CONFLICT(user_id) DO UPDATE SET data_json = excluded.data_json, updated_at = CURRENT_TIMESTAMP
   `).run(req.user.id, data);
   res.json({ ok: true });
+});
+
+app.post('/api/hour-bank/report', auth, async (req, res) => {
+  const toEmail = normEmail(req.body.toEmail);
+  const title = req.body.lang === 'fr' ? "Extrait banque d'heures" : 'Extrato do banco de horas';
+  const pdf = makeSimplePdf(hourBankPdfBody({ ...req.body, name: req.body.name || req.user.name }));
+
+  if (req.body.sendEmail) {
+    if (!toEmail) return res.status(400).json({ error: 'invalid_email' });
+    await sendMail({
+      to: toEmail,
+      subject: `${title} - ${req.body.from || ''} / ${req.body.to || ''}`,
+      text: 'Segue em anexo o extrato do banco de horas em PDF.',
+      html: '<p>Segue em anexo o extrato do banco de horas em PDF.</p>',
+      attachments: [{ filename: 'banco-horas.pdf', content: pdf, contentType: 'application/pdf' }]
+    });
+    return res.json({ ok: true });
+  }
+
+  res
+    .type('application/pdf')
+    .set('Content-Disposition', 'attachment; filename="banco-horas.pdf"')
+    .send(pdf);
 });
 
 app.get('/app', auth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));

@@ -15,13 +15,13 @@ function transporter() {
   });
 }
 
-async function sendMail({ to, subject, html, text }) {
+async function sendMail({ to, subject, html, text, attachments }) {
   const tx = transporter();
   if (!tx) {
     console.log(`[email disabled] ${subject}: ${text || html}`);
     return { disabled: true };
   }
-  return tx.sendMail({ from, to, subject, html, text });
+  return tx.sendMail({ from, to, subject, html, text, attachments });
 }
 
 function activationEmail(name, link) {
