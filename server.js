@@ -112,7 +112,8 @@ function makeSimplePdf(lines) {
 }
 
 function hourBankPdfBody(data) {
-  const categories = ['hs25', 'hs50', 'sat', 'sun', 'hol'];
+  const categories = ['p25', 'p50', 'p100'];
+  const label = (key) => ({ p25: 'HS +25%', p50: 'HS +50%', p100: 'HS +100%' })[key] || key;
   const title = data.lang === 'fr' ? "Extrait banque d'heures" : 'Extrato do banco de horas';
   const lines = [
     title,
@@ -120,7 +121,7 @@ function hourBankPdfBody(data) {
     `Periodo: ${data.from || ''} a ${data.to || ''}`,
     '',
     'Saldo inicial:',
-    ...categories.map((k) => `${k}: ${Number(data.opening?.[k] || 0).toFixed(2)} h`),
+    ...categories.map((k) => `${label(k)}: ${Number(data.opening?.[k] || 0).toFixed(2)} h`),
     '',
     'Movimentos:'
   ];
@@ -128,7 +129,7 @@ function hourBankPdfBody(data) {
     lines.push(`${e.date || ''} | ${e.type || ''} | ${e.category || ''} | ${Number(e.hours || 0).toFixed(2)} h | ${e.note || ''}`);
   });
   if (!data.entries?.length) lines.push('Sem movimentos no periodo.');
-  lines.push('', 'Saldo final:', ...categories.map((k) => `${k}: ${Number(data.closing?.[k] || 0).toFixed(2)} h`));
+  lines.push('', 'Saldo final:', ...categories.map((k) => `${label(k)}: ${Number(data.closing?.[k] || 0).toFixed(2)} h`));
   return lines;
 }
 
