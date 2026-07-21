@@ -114,22 +114,23 @@ function makeSimplePdf(lines) {
 function hourBankPdfBody(data) {
   const categories = ['p25', 'p50', 'p100'];
   const label = (key) => ({ p25: 'HS +25%', p50: 'HS +50%', p100: 'HS +100%' })[key] || key;
-  const title = data.lang === 'fr' ? "Extrait banque d'heures" : 'Extrato do banco de horas';
+  const typeLabel = (type) => ({ add: 'Ajout', remove: 'Retrait', paid: 'Payé' })[type] || type;
+  const title = "Extrait banque d'heures";
   const lines = [
     title,
-    `Nome: ${data.name || ''}`,
-    `Periodo: ${data.from || ''} a ${data.to || ''}`,
+    `Nom: ${data.name || ''}`,
+    `Période: ${data.from || ''} au ${data.to || ''}`,
     '',
-    'Saldo inicial:',
+    'Solde initial:',
     ...categories.map((k) => `${label(k)}: ${Number(data.opening?.[k] || 0).toFixed(2)} h`),
     '',
-    'Movimentos:'
+    'Mouvements:'
   ];
   (Array.isArray(data.entries) ? data.entries : []).forEach((e) => {
-    lines.push(`${e.date || ''} | ${e.type || ''} | ${e.category || ''} | ${Number(e.hours || 0).toFixed(2)} h | ${e.note || ''}`);
+    lines.push(`${e.date || ''} | ${typeLabel(e.type)} | ${label(e.category)} | ${Number(e.hours || 0).toFixed(2)} h | ${e.note || ''}`);
   });
-  if (!data.entries?.length) lines.push('Sem movimentos no periodo.');
-  lines.push('', 'Saldo final:', ...categories.map((k) => `${label(k)}: ${Number(data.closing?.[k] || 0).toFixed(2)} h`));
+  if (!data.entries?.length) lines.push('Aucun mouvement sur cette période.');
+  lines.push('', 'Solde final:', ...categories.map((k) => `${label(k)}: ${Number(data.closing?.[k] || 0).toFixed(2)} h`));
   return lines;
 }
 
@@ -235,7 +236,7 @@ app.post('/api/data', auth, (req, res) => {
 
 app.post('/api/hour-bank/report', auth, async (req, res) => {
   const toEmail = normEmail(req.body.toEmail);
-  const title = req.body.lang === 'fr' ? "Extrait banque d'heures" : 'Extrato do banco de horas';
+  const title = "Extrait banque d'heures";
   const pdf = makeSimplePdf(hourBankPdfBody({ ...req.body, name: req.body.name || req.user.name }));
 
   if (req.body.sendEmail) {
@@ -243,16 +244,16 @@ app.post('/api/hour-bank/report', auth, async (req, res) => {
     await sendMail({
       to: toEmail,
       subject: `${title} - ${req.body.from || ''} / ${req.body.to || ''}`,
-      text: 'Segue em anexo o extrato do banco de horas em PDF.',
-      html: '<p>Segue em anexo o extrato do banco de horas em PDF.</p>',
-      attachments: [{ filename: 'banco-horas.pdf', content: pdf, contentType: 'application/pdf' }]
+      text: "Veuillez trouver en pièce jointe l'extrait de la banque d'heures au format PDF.",
+      html: "<p>Veuillez trouver en pièce jointe l'extrait de la banque d'heures au format PDF.</p>",
+      attachments: [{ filename: 'extrait-banque-heures.pdf', content: pdf, contentType: 'application/pdf' }]
     });
     return res.json({ ok: true });
   }
 
   res
     .type('application/pdf')
-    .set('Content-Disposition', 'attachment; filename="banco-horas.pdf"')
+    .set('Content-Disposition', 'attachment; filename="extrait-banque-heures.pdf"')
     .send(pdf);
 });
 
