@@ -55,6 +55,8 @@ function auth(req, res, next) {
 
 function pdfEscape(text) {
   return String(text || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[\\()]/g, '\\$&')
     .replace(/[^\x09\x0A\x0D\x20-\xFF]/g, '');
 }
@@ -143,7 +145,11 @@ function makeDesignedPdf(draw) {
     y = 760;
   };
   const ensure = (height) => {
-    if (y - height < 58) newPage();
+    if (y - height < 58) {
+      newPage();
+      return true;
+    }
+    return false;
   };
   const add = (cmd) => commands.push(cmd);
   newPage();
@@ -155,44 +161,47 @@ function makeDesignedPdf(draw) {
     text: (...args) => add(pdfText(...args)),
     rect: (...args) => add(pdfRect(...args)),
     header(title, subtitle) {
-      add(pdfRect(54, 728, 487, 66, '0.09 0.54 0.41', '0.09 0.54 0.41'));
-      add(pdfText(74, 766, title, 20, true, '1 1 1'));
-      add(pdfText(74, 744, subtitle, 10, false, '0.88 1 0.95'));
-      y = 704;
+      add(pdfRect(54, 742, 487, 52, '0.09 0.54 0.41', '0.09 0.54 0.41'));
+      add(pdfText(74, 772, title, 18, true, '1 1 1'));
+      add(pdfText(74, 752, subtitle, 9, false, '0.88 1 0.95'));
+      y = 718;
     },
     keyValue(label, value, x, yy, w = 150) {
-      add(pdfRect(x, yy - 33, w, 44, '1 1 1', '0.88 0.88 0.84'));
-      add(pdfText(x + 12, yy - 7, label, 8, false, '0.48 0.48 0.52'));
-      add(pdfText(x + 12, yy - 24, value, 14, true, '0.05 0.44 0.35'));
+      add(pdfRect(x, yy - 28, w, 37, '1 1 1', '0.88 0.88 0.84'));
+      add(pdfText(x + 10, yy - 6, label, 7.5, false, '0.48 0.48 0.52'));
+      add(pdfText(x + 10, yy - 21, value, 12, true, '0.05 0.44 0.35'));
     },
     section(title) {
-      ensure(34);
-      add(pdfText(54, y, title, 13, true, '0.10 0.10 0.14'));
-      y -= 20;
+      ensure(26);
+      add(pdfText(54, y, title, 11.5, true, '0.10 0.10 0.14'));
+      y -= 16;
     },
     table(columns, rows, widths) {
       const x0 = 54;
-      const rowH = 22;
+      const rowH = 18;
       const tableW = widths.reduce((a, b) => a + b, 0);
-      ensure(rowH * (rows.length + 2));
-      add(pdfRect(x0, y - rowH + 5, tableW, rowH, '0.90 0.96 0.93', '0.78 0.88 0.83'));
-      let x = x0;
-      columns.forEach((col, i) => {
-        add(pdfText(x + 6, y - 10, col, 8, true, '0.07 0.38 0.31'));
-        x += widths[i];
-      });
-      y -= rowH;
-      rows.forEach((row, r) => {
+      const drawHeader = () => {
         ensure(rowH + 8);
+        add(pdfRect(x0, y - rowH + 5, tableW, rowH, '0.90 0.96 0.93', '0.78 0.88 0.83'));
+        let hx = x0;
+        columns.forEach((col, i) => {
+          add(pdfText(hx + 6, y - 8, col, 7.5, true, '0.07 0.38 0.31'));
+          hx += widths[i];
+        });
+        y -= rowH;
+      };
+      drawHeader();
+      rows.forEach((row, r) => {
+        if (ensure(rowH + 8)) drawHeader();
         add(pdfRect(x0, y - rowH + 5, tableW, rowH, r % 2 ? '1 1 1' : '0.975 0.975 0.955', '0.88 0.88 0.84'));
-        x = x0;
+        let x = x0;
         row.forEach((cell, i) => {
-          add(pdfText(x + 6, y - 10, String(cell ?? ''), 8.5, false, '0.14 0.14 0.18'));
+          add(pdfText(x + 6, y - 8, String(cell ?? ''), 7.8, false, '0.14 0.14 0.18'));
           x += widths[i];
         });
         y -= rowH;
       });
-      y -= 12;
+      y -= 8;
     }
   });
   if (commands.length) pages.push(commands);
@@ -323,7 +332,7 @@ function makeMonthReportPdf(data) {
     pdf.keyValue('Total heures', fmtHours(s.workHours), 54, pdf.y, 150);
     pdf.keyValue('Heures normales', fmtHours(s.normal), 220, pdf.y, 150);
     pdf.keyValue('Frais déplacement', `${Number(s.travelDays || 0)} jours`, 386, pdf.y, 155);
-    pdf.y -= 70;
+    pdf.y -= 54;
 
     pdf.section('Détail par jour');
     pdf.table(
@@ -392,7 +401,7 @@ function makeHourBankReportPdf(data) {
     pdf.keyValue('Solde HS +25%', fmtHours(data.closing?.p25), 54, pdf.y, 150);
     pdf.keyValue('Solde HS +50%', fmtHours(data.closing?.p50), 220, pdf.y, 150);
     pdf.keyValue('Solde HS +100%', fmtHours(data.closing?.p100), 386, pdf.y, 155);
-    pdf.y -= 70;
+    pdf.y -= 54;
 
     pdf.section('Solde initial');
     pdf.table(
