@@ -382,6 +382,7 @@ function makeHourBankReportPdf(data) {
   const typeLabel = (type) => ({ add: 'Ajout', remove: 'Retrait', paid: 'Payé' })[type] || type;
   const sign = (type) => (type === 'add' ? 1 : -1);
   const running = Object.fromEntries(categories.map((key) => [key, Number(data.opening?.[key] || 0)]));
+  const createdAt = data.createdAt || new Date().toISOString().slice(0, 10);
   const rows = (Array.isArray(data.entries) ? data.entries : []).map((entry) => {
     const category = categories.includes(entry.category) ? entry.category : 'p25';
     const hours = Number(entry.hours || 0);
@@ -417,7 +418,7 @@ function makeHourBankReportPdf(data) {
       [68, 70, 100, 78, 78, 78]
     );
 
-    pdf.section('Solde final');
+    pdf.section(`Solde final au ${createdAt}`);
     pdf.table(
       ['Catégorie', 'Heures'],
       categories.map((category) => [label(category), fmtHours(data.closing?.[category])]),
