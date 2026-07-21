@@ -134,6 +134,49 @@ function hourBankPdfBody(data) {
   return lines;
 }
 
+function monthReportPdfBody(data) {
+  const dayType = (day) => {
+    if (day.type === 'work') return `${Number(day.hours || 0).toFixed(2)} h travaillées${day.travel === false ? ', sans frais de déplacement' : ''}`;
+    if (day.type === 'vacation') return 'congé payé';
+    if (day.type === 'absence') return 'absence non payée';
+    return '';
+  };
+  const s = data.summary || {};
+  const lines = [
+    "Rapport d'heures mensuel",
+    `Nom: ${data.name || ''}`,
+    `Mois: ${data.month || ''}`,
+    '',
+    'Détail par jour:'
+  ];
+  (Array.isArray(data.days) ? data.days : []).forEach((day) => {
+    lines.push(`${day.date || ''}: ${dayType(day)}`);
+  });
+  if (!data.days?.length) lines.push('Aucune saisie.');
+  lines.push('', 'Récapitulatif par semaine:');
+  (Array.isArray(data.weeks) ? data.weeks : []).forEach((week) => {
+    lines.push(`${week.label || ''}: ${Number(week.hours || 0).toFixed(2)} h`);
+  });
+  lines.push(
+    '',
+    'Récapitulatif du mois:',
+    `Total heures: ${Number(s.workHours || 0).toFixed(2)} h`,
+    `Heures normales: ${Number(s.normal || 0).toFixed(2)} h`,
+    `HS +25%: ${Number(s.hs25 || 0).toFixed(2)} h`,
+    `HS semaine +50%: ${Number(s.hs50 || 0).toFixed(2)} h`,
+    `HS samedis +50%: ${Number(s.sat || 0).toFixed(2)} h`,
+    `HS dimanches +100%: ${Number(s.sun || 0).toFixed(2)} h`,
+    `HS fériés +100%: ${Number(s.hol || 0).toFixed(2)} h`,
+    `Samedis travaillés: ${Number(s.satDays || 0)}`,
+    `Dimanches travaillés: ${Number(s.sunDays || 0)}`,
+    `Fériés travaillés: ${Number(s.holDays || 0)}`,
+    `Congés payés: ${Number(s.vac || 0)}`,
+    `Absences non payées: ${Number(s.abs || 0)}`,
+    `Frais de déplacement: ${Number(s.travelDays || 0)} jours`
+  );
+  return lines;
+}
+
 app.post('/api/register', async (req, res) => {
   const name = String(req.body.name || '').trim();
   const email = normEmail(req.body.email);
@@ -255,6 +298,21 @@ app.post('/api/hour-bank/report', auth, async (req, res) => {
     .type('application/pdf')
     .set('Content-Disposition', 'attachment; filename="extrait-banque-heures.pdf"')
     .send(pdf);
+});
+
+app.post('/api/month-report', auth, async (req, res) => {
+  const toEmail = normEmail(req.body.toEmail);
+  if (!toEmail) return res.status(400).json({ error: 'invalid_email' });
+  const title = `Rapport d'heures - ${req.body.month || ''} - ${req.body.name || req.user.name}`;
+  const pdf = makeSimplePdf(monthReportPdfBody({ ...req.body, name: req.body.name || req.user.name }));
+  await sendMail({
+    to: toEmail,
+    subject: title,
+    text: "Veuillez trouver en pièce jointe le rapport d'heures mensuel au format PDF.",
+    html: "<p>Veuillez trouver en pièce jointe le rapport d'heures mensuel au format PDF.</p>",
+    attachments: [{ filename: 'rapport-heures-mensuel.pdf', content: pdf, contentType: 'application/pdf' }]
+  });
+  res.json({ ok: true });
 });
 
 app.get('/app', auth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));
