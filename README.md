@@ -15,7 +15,7 @@ Por defeito a app usa a porta `8092`.
 
 O primeiro utilizador registado na app fica automaticamente administrador.
 
-Depois de entrar, esse utilizador ve um botao `Utilizadores`, onde pode gerir contas registadas. Utilizadores normais nao veem esse botao e tambem nao conseguem aceder aos endpoints de administracao.
+Depois de entrar, esse utilizador ve um botao `Utilizadores`, onde pode gerir contas registadas, reenviar ativacoes e promover/remover outros administradores. Utilizadores normais nao veem esse botao e tambem nao conseguem aceder aos endpoints de administracao.
 
 ## Instalar por Docker Compose
 

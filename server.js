@@ -535,6 +535,23 @@ app.post('/api/admin/users/:id/resend-verification', auth, adminOnly, async (req
   res.json({ ok: true });
 });
 
+app.patch('/api/admin/users/:id/admin', auth, adminOnly, (req, res) => {
+  const id = Number(req.params.id);
+  const isAdmin = !!req.body.isAdmin;
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'invalid_id' });
+
+  const user = db.prepare('SELECT id, is_admin FROM users WHERE id = ?').get(id);
+  if (!user) return res.status(404).json({ error: 'not_found' });
+
+  if (!isAdmin && user.is_admin) {
+    const admins = db.prepare('SELECT COUNT(*) AS c FROM users WHERE is_admin = 1').get().c;
+    if (admins <= 1) return res.status(400).json({ error: 'cannot_remove_last_admin' });
+  }
+
+  db.prepare('UPDATE users SET is_admin = ? WHERE id = ?').run(isAdmin ? 1 : 0, id);
+  res.json({ ok: true, id, isAdmin });
+});
+
 app.delete('/api/admin/users/:id', auth, adminOnly, (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'invalid_id' });
