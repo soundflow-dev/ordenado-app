@@ -25,8 +25,8 @@ Copia `.env.example` para `.env` e preenche:
 PORT=8092
 JWT_SECRET=gera_uma_string_aleatoria_longa
 RESEND_API_KEY=re_xxxxxxxx
-FROM_EMAIL=noreply@jarvisserver.one
-APP_URL=https://ordenadoapp.jarvisserver.one
+FROM_EMAIL=noreply@teu-dominio.example
+APP_URL=https://teu-dominio.example
 DB_PATH=/data/ordenado.db
 ```
 
@@ -71,8 +71,8 @@ Preenche assim:
 ```text
 WebUI Port: 8092
 Data: /mnt/user/appdata/ordenado
-APP_URL: https://ordenadoapp.jarvisserver.one
-FROM_EMAIL: noreply@jarvisserver.one
+APP_URL: https://teu-dominio.example
+FROM_EMAIL: noreply@teu-dominio.example
 JWT_SECRET: coloca aqui uma chave longa gerada por ti
 RESEND_API_KEY: coloca aqui a chave API do Resend
 ```
@@ -97,10 +97,10 @@ Depois abre:
 http://IP_DO_UNRAID:8092
 ```
 
-Se usares Cloudflare Tunnel, abre:
+Se usares Cloudflare Tunnel, abre o teu dominio publico:
 
 ```text
-https://ordenadoapp.jarvisserver.one
+https://teu-dominio.example
 ```
 
 Para confirmar se a app esta viva:

@@ -25,8 +25,8 @@
   <Config Name="Data" Target="/data" Default="/mnt/user/appdata/ordenado" Mode="rw" Description="Pasta persistente onde fica a base de dados SQLite." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/ordenado</Config>
   <Config Name="PORT" Target="PORT" Default="8092" Mode="" Description="Porta interna usada pela app. Mantem 8092." Type="Variable" Display="advanced" Required="true" Mask="false">8092</Config>
   <Config Name="DB_PATH" Target="DB_PATH" Default="/data/ordenado.db" Mode="" Description="Caminho da base de dados dentro do container." Type="Variable" Display="advanced" Required="true" Mask="false">/data/ordenado.db</Config>
-  <Config Name="APP_URL" Target="APP_URL" Default="https://ordenadoapp.jarvisserver.one" Mode="" Description="URL publico da app. Usado nos links de confirmacao por email." Type="Variable" Display="always" Required="true" Mask="false">https://ordenadoapp.jarvisserver.one</Config>
-  <Config Name="FROM_EMAIL" Target="FROM_EMAIL" Default="noreply@jarvisserver.one" Mode="" Description="Email remetente usado pela app." Type="Variable" Display="always" Required="true" Mask="false">noreply@jarvisserver.one</Config>
+  <Config Name="APP_URL" Target="APP_URL" Default="https://teu-dominio.example" Mode="" Description="URL publico da app. Usado nos links de confirmacao por email." Type="Variable" Display="always" Required="true" Mask="false">https://teu-dominio.example</Config>
+  <Config Name="FROM_EMAIL" Target="FROM_EMAIL" Default="noreply@teu-dominio.example" Mode="" Description="Email remetente usado pela app." Type="Variable" Display="always" Required="true" Mask="false">noreply@teu-dominio.example</Config>
   <Config Name="JWT_SECRET" Target="JWT_SECRET" Default="" Mode="" Description="Segredo longo e aleatorio para sessoes/login. Gera um novo e guarda-o." Type="Variable" Display="always" Required="true" Mask="true"></Config>
   <Config Name="RESEND_API_KEY" Target="RESEND_API_KEY" Default="" Mode="" Description="API key do Resend para enviar emails de confirmacao." Type="Variable" Display="always" Required="true" Mask="true"></Config>
 </Container>

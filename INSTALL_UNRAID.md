@@ -44,8 +44,8 @@ Preenche:
 ```text
 WebUI Port: 8092
 Data: /mnt/user/appdata/ordenado
-APP_URL: https://ordenadoapp.jarvisserver.one
-FROM_EMAIL: noreply@jarvisserver.one
+APP_URL: https://teu-dominio.example
+FROM_EMAIL: noreply@teu-dominio.example
 JWT_SECRET: uma_chave_longa_aleatoria
 RESEND_API_KEY: a_tua_chave_do_resend
 ```
@@ -66,10 +66,10 @@ Depois testa:
 http://IP_DO_UNRAID:8092
 ```
 
-ou:
+ou o teu dominio publico:
 
 ```text
-https://ordenadoapp.jarvisserver.one
+https://teu-dominio.example
 ```
 
 ### 5. Atualizar pela interface
@@ -87,7 +87,7 @@ Este guia assume que a app vai ficar em:
 - Pasta da app: `/mnt/user/appdata/ordenado-app`
 - Base de dados SQLite: `/mnt/user/appdata/ordenado/ordenado.db`
 - Porta interna/externa: `8092`
-- URL publica: `https://ordenadoapp.jarvisserver.one`
+- URL publica: `https://teu-dominio.example`
 - Repositorio GitHub: `https://github.com/soundflow-dev/ordenado-app`
 
 ## 1. Preparar o Unraid
@@ -169,13 +169,13 @@ O `.env` tem segredos, por isso nao vai para o GitHub.
 Se ja tens o `.env` pronto no Mac, copia-o diretamente para o Unraid:
 
 ```bash
-scp /Users/brunosilva/ordenado-app/.env root@IP_DO_UNRAID:/mnt/user/appdata/ordenado-app/.env
+scp /caminho/no/teu/computador/ordenado-app/.env root@IP_DO_UNRAID:/mnt/user/appdata/ordenado-app/.env
 ```
 
 Exemplo:
 
 ```bash
-scp /Users/brunosilva/ordenado-app/.env root@192.168.1.50:/mnt/user/appdata/ordenado-app/.env
+scp /caminho/no/teu/computador/ordenado-app/.env root@192.168.1.50:/mnt/user/appdata/ordenado-app/.env
 ```
 
 Depois, no Unraid:
@@ -199,8 +199,8 @@ Cola isto dentro do ficheiro:
 PORT=8092
 JWT_SECRET=troca_isto_por_uma_frase_muito_grande_e_secreta
 RESEND_API_KEY=re_a_tua_chave_resend
-FROM_EMAIL=noreply@jarvisserver.one
-APP_URL=https://ordenadoapp.jarvisserver.one
+FROM_EMAIL=noreply@teu-dominio.example
+APP_URL=https://teu-dominio.example
 DB_PATH=/data/ordenado.db
 ```
 
@@ -270,7 +270,7 @@ http://192.168.1.50:8092
 Para os emails de confirmacao funcionarem bem, a app deve estar acessivel no dominio configurado:
 
 ```text
-https://ordenadoapp.jarvisserver.one
+https://teu-dominio.example
 ```
 
 Tens duas formas simples.
@@ -289,8 +289,8 @@ Esta e a opcao mais limpa para Unraid porque nao exige abrir portas no router.
 8. Cria um hostname publico:
 
 ```text
-Subdomain: ordenadoapp
-Domain: jarvisserver.one
+Subdomain: ordenado
+Domain: teu-dominio.example
 Service type: HTTP
 Service URL: http://IP_DO_UNRAID:8092
 ```
@@ -298,7 +298,7 @@ Service URL: http://IP_DO_UNRAID:8092
 Depois testa:
 
 ```text
-https://ordenadoapp.jarvisserver.one
+https://ordenado.teu-dominio.example
 ```
 
 ## 12. Opcao alternativa: Nginx Proxy Manager
@@ -312,7 +312,7 @@ Usa esta opcao se ja tiveres reverse proxy no Unraid.
 5. Preenche:
 
 ```text
-Domain Names: ordenadoapp.jarvisserver.one
+Domain Names: ordenado.teu-dominio.example
 Scheme: http
 Forward Hostname/IP: IP_DO_UNRAID
 Forward Port: 8092
@@ -323,7 +323,7 @@ Forward Port: 8092
 8. Ativa `Force SSL`.
 9. Guarda.
 
-Na Cloudflare, cria um registo DNS para `ordenadoapp` a apontar para o teu servidor.
+Na Cloudflare, cria um registo DNS para o subdominio escolhido a apontar para o teu servidor.
 
 ## 13. Atualizar a app no futuro
 

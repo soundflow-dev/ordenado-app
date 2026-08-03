@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-const from = process.env.FROM_EMAIL || 'noreply@jarvisserver.one';
+const from = process.env.FROM_EMAIL || 'noreply@teu-dominio.example';
 
 function transporter() {
   if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.startsWith('re_xxxxx')) return null;
