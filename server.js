@@ -53,6 +53,11 @@ function auth(req, res, next) {
   }
 }
 
+function adminOnly(req, res, next) {
+  if (!req.user?.is_admin) return res.status(403).json({ error: 'forbidden' });
+  next();
+}
+
 function pdfEscape(text) {
   return String(text || '')
     .normalize('NFD')
@@ -499,6 +504,55 @@ app.post('/api/reset-password', async (req, res) => {
 
 app.get('/api/me', auth, (req, res) => {
   res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email, isAdmin: !!req.user.is_admin } });
+});
+
+app.get('/api/admin/users', auth, adminOnly, (req, res) => {
+  const users = db.prepare(`
+    SELECT id, name, email, verified, is_admin, created_at
+    FROM users
+    ORDER BY created_at DESC, id DESC
+  `).all().map((user) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    verified: !!user.verified,
+    isAdmin: !!user.is_admin,
+    createdAt: user.created_at
+  }));
+  res.json({ users });
+});
+
+app.post('/api/admin/users/:id/resend-verification', auth, adminOnly, async (req, res) => {
+  const id = Number(req.params.id);
+  const user = db.prepare('SELECT id, name, email, verified FROM users WHERE id = ?').get(id);
+  if (!user) return res.status(404).json({ error: 'not_found' });
+  if (user.verified) return res.status(400).json({ error: 'already_verified' });
+
+  const verificationToken = token();
+  db.prepare('UPDATE users SET verification_token = ? WHERE id = ?').run(verificationToken, id);
+  const link = `${APP_URL}/api/verify-email/${verificationToken}`;
+  await sendMail({ to: user.email, ...activationEmail(user.name, link) });
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/users/:id', auth, adminOnly, (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'invalid_id' });
+  if (id === req.user.id) return res.status(400).json({ error: 'cannot_delete_self' });
+
+  const user = db.prepare('SELECT id, is_admin FROM users WHERE id = ?').get(id);
+  if (!user) return res.status(404).json({ error: 'not_found' });
+
+  if (user.is_admin) {
+    const admins = db.prepare('SELECT COUNT(*) AS c FROM users WHERE is_admin = 1').get().c;
+    if (admins <= 1) return res.status(400).json({ error: 'cannot_delete_last_admin' });
+  }
+
+  db.transaction(() => {
+    db.prepare('DELETE FROM user_data WHERE user_id = ?').run(id);
+    db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  })();
+  res.json({ ok: true });
 });
 
 app.post('/api/test-email', auth, async (req, res) => {

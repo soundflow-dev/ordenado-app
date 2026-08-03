@@ -11,6 +11,12 @@ npm start
 
 Por defeito a app usa a porta `8092`.
 
+## Administrador
+
+O primeiro utilizador registado na app fica automaticamente administrador.
+
+Depois de entrar, esse utilizador ve um botao `Utilizadores`, onde pode gerir contas registadas. Utilizadores normais nao veem esse botao e tambem nao conseguem aceder aos endpoints de administracao.
+
 ## Instalar por Docker Compose
 
 Usa esta opcao se quiseres instalar manualmente a partir do GitHub.
