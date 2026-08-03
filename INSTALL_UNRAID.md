@@ -33,7 +33,7 @@ curl -L https://raw.githubusercontent.com/soundflow-dev/ordenado-app/main/templa
 
 1. Vai a `Docker`.
 2. Clica em `Add Container`.
-3. No campo `Template`, escolhe `ordenado-app`.
+3. No campo `Template`, escolhe `ordenado-app` ou `my-ordenado-app`.
 
 Se nao aparecer logo, recarrega a pagina do Unraid.
 
